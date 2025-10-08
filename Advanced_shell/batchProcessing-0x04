@@ -1,0 +1,31 @@
+#!/bin/bash
+# Script to fetch Pokémon data in parallel using background processes
+
+DATA_DIR="pokemon_data"
+mkdir -p "$DATA_DIR"
+
+# List of Pokémon to fetch
+pokemon_list=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+
+# Function to fetch Pokémon data
+fetch_pokemon() {
+    local pokemon=$1
+    echo "Fetching data for $pokemon..."
+    response_code=$(curl -s -o "$DATA_DIR/${pokemon}.json" -w "%{http_code}" "https://pokeapi.co/api/v2/pokemon/$pokemon")
+
+    if [ "$response_code" -eq 200 ]; then
+        echo "Saved data to $DATA_DIR/${pokemon}.json"
+    else
+        echo "Failed to fetch data for $pokemon (HTTP $response_code)" >> errors.txt
+    fi
+}
+
+# Run all fetches in parallel
+for pokemon in "${pokemon_list[@]}"; do
+    fetch_pokemon "$pokemon" &
+done
+
+# Wait for all background processes to finish
+wait
+
+echo "All Pokémon data fetched successfully."
