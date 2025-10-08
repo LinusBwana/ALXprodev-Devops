@@ -1,25 +1,44 @@
 #!/bin/bash
-# Script to fetch data for multiple Pokémon and save them into separate files
+# Script to fetch multiple Pokémon data with error handling and retry logic
 
-# Create a directory to store Pokémon data if it doesn’t exist
-mkdir -p pokemon_data
+DATA_DIR="pokemon_data"
+mkdir -p "$DATA_DIR"
 
-# Define the list of Pokémon
+# List of Pokémon
 pokemon_list=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# Loop through each Pokémon and fetch its data
+# Maximum retry attempts
+MAX_RETRIES=3
+
 for pokemon in "${pokemon_list[@]}"; do
-  echo "Fetching data for $pokemon..."
- 
-  # Make the API request and save it to the pokemon_data directory
-  curl -s "https://pokeapi.co/api/v2/pokemon/$pokemon" -o "pokemon_data/${pokemon}.json"
-  # Check if the file was successfully created
-  if [ -s "pokemon_data/${pokemon}.json" ]; then
-    echo "Saved data to pokemon_data/${pokemon}.json"
-  else
-    echo "Failed to fetch data for $pokemon"
-  fi 
- 
-  # Wait for 2 seconds to avoid rate limiting
-  sleep 2
+    echo "Fetching data for $pokemon..."
+    
+    success=false
+    attempt=1
+
+    while [ $attempt -le $MAX_RETRIES ]; do
+        # Fetch data using curl
+        response_code=$(curl -s -o "$DATA_DIR/${pokemon}.json" -w "%{http_code}" "https://pokeapi.co/api/v2/pokemon/$pokemon")
+
+        # Check if the response was successful (HTTP 200)
+        if [ "$response_code" -eq 200 ]; then
+            echo "Saved data to $DATA_DIR/${pokemon}.json"
+            success=true
+            break
+        else
+            echo "Attempt $attempt failed for $pokemon (HTTP $response_code)"
+            ((attempt++))
+            sleep 2
+        fi
+    done
+
+    # If all retries failed, log error
+    if [ "$success" = false ]; then
+        echo "Failed to fetch data for $pokemon after $MAX_RETRIES attempts" >> errors.txt
+    fi
+
+    # Delay between different Pokémon requests
+    sleep 2
 done
+
+echo "Batch processing complete."
