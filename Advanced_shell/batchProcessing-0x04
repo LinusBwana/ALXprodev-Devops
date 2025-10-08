@@ -20,21 +20,22 @@ fetch_pokemon() {
     fi
 }
 
-# Run fetches in parallel
+# Run fetches in background
 for pokemon in "${pokemon_list[@]}"; do
     fetch_pokemon "$pokemon" &
 done
 
-# Display running background jobs
-echo "Current background jobs:"
+# Display active background jobs
+echo "Listing background jobs:"
 jobs
 
-# Wait for all jobs to finish
+# Wait for all jobs to complete
+echo "Waiting for all background processes to finish..."
 wait
 
-# Safety check: kill any leftover background jobs
+# After waiting, check if any background jobs remain
 if jobs -p > /dev/null; then
-    echo "Cleaning up any remaining background jobs..."
+    echo "Some background jobs are still running, terminating them..."
     kill $(jobs -p) 2>/dev/null
 fi
 
