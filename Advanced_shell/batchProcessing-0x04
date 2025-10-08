@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to fetch Pokémon data in parallel using background processes
+# Script to fetch Pokémon data in parallel using background processes and process management
 
 DATA_DIR="pokemon_data"
 mkdir -p "$DATA_DIR"
@@ -20,12 +20,22 @@ fetch_pokemon() {
     fi
 }
 
-# Run all fetches in parallel
+# Run fetches in parallel
 for pokemon in "${pokemon_list[@]}"; do
     fetch_pokemon "$pokemon" &
 done
 
-# Wait for all background processes to finish
+# Display running background jobs
+echo "Current background jobs:"
+jobs
+
+# Wait for all jobs to finish
 wait
+
+# Safety check: kill any leftover background jobs
+if jobs -p > /dev/null; then
+    echo "Cleaning up any remaining background jobs..."
+    kill $(jobs -p) 2>/dev/null
+fi
 
 echo "All Pokémon data fetched successfully."
